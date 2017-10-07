@@ -1,0 +1,44 @@
+syntax = syntax-rule, {syntax-rule};
+
+syntax-rule = meta-identifier, '=', definitions-list, ';';
+
+definitions-list = single-definition, {'|', single-definition};
+
+single-definition = term, {',', term};
+
+term = factor, ['-', exception];
+
+exception = factor;
+
+factor = [integer, '*'], primary;
+
+primary
+    = optional-sequence | repeated-sequence
+    | special-sequence | grouped-sequence
+    | meta-identifier | terminal-string;
+
+optional-sequence = '[', definitions-list, ']';
+
+repeated-sequence = '{', definitions-list, '}';
+
+grouped-sequence = '(', definitions-list, ')';
+
+terminal-string
+    = "'", character - "'", {character - "'"}, "'"
+    | '"', character - '"', {character - '"'}, '"'
+    ;
+
+meta-identifier = letter, {letter | decimal-digit};
+
+integer = decimal-digit, {decimal-digit};
+
+special-sequence = '?', {character - '?'}, '?';
+
+comment = '(*', {comment-symbol}, '*)';
+
+comment-symbol 
+    = comment | terminal-string | special-sequence
+    | character
+    ;
+
+empty = ;

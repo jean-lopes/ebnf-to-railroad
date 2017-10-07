@@ -20,11 +20,9 @@ library
   exposed-modules:     EBNF
                      , EBNF.AST
                      , EBNF.Parser                     
-                     , EBNF.Parser.Char
-                     , EBNF.Parser.Internal                     
-                     , EBNF.Parser.Terminal 
   build-depends:       base >= 4.7 && < 5
                      , text 
+                     , containers
                      , megaparsec
   default-language:    Haskell2010
   ghc-options:         -Wall
