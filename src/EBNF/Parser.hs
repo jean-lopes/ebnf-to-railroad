@@ -84,6 +84,7 @@ primary = choice
     , groupedSequence
     , optionalSequence
     , repeatedSequence
+    , pure Empty
     ]
 
 repeatedFactor :: Parser Factor

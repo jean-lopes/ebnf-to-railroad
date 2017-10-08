@@ -12,10 +12,14 @@ exception = factor;
 
 factor = [integer, '*'], primary;
 
-primary
-    = optional-sequence | repeated-sequence
-    | special-sequence | grouped-sequence
-    | meta-identifier | terminal-string;
+primary = optional-sequence
+        | repeated-sequence
+        | special-sequence
+        | grouped-sequence
+        | meta-identifier
+        | terminal-string
+        | empty
+        ;
 
 optional-sequence = '[', definitions-list, ']';
 
@@ -30,15 +34,16 @@ terminal-string
 
 meta-identifier = letter, {letter | decimal-digit};
 
+empty = ;
+
 integer = decimal-digit, {decimal-digit};
 
 special-sequence = '?', {character - '?'}, '?';
 
 comment = '(*', {comment-symbol}, '*)';
 
-comment-symbol 
-    = comment | terminal-string | special-sequence
-    | character
-    ;
-
-empty = ;
+comment-symbol = comment
+               | terminal-string
+               | special-sequence
+               | character
+               ;

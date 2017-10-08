@@ -36,5 +36,6 @@ data Primary
     | MetaIdentifier Text
     | TerminalString Text
     | SpecialSequence Text
+    | Empty
     deriving Show
 
