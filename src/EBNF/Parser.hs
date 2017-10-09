@@ -49,7 +49,7 @@ identifier = lexeme $ Text.pack <$> name
   where
     name = (:) <$> letterChar <*> many (alphaNumChar <|> char '-')
 
-integer :: Parser Integer
+integer :: Parser Int
 integer = lexeme $ read <$> some digitChar
 
 specialSequence' :: Parser String

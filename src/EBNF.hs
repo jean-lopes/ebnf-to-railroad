@@ -24,7 +24,7 @@ class Display a where
 
     tree :: a -> Tree String
 
-instance Display Integer where
+instance Display Int where
     tree n = Node (show n) []
 
 instance Display Text where

@@ -26,7 +26,7 @@ data Term
 
 data Factor
     = Factor Primary
-    | RepeatedFactor Integer Primary
+    | RepeatedFactor Int Primary
     deriving Show
 
 data Primary
@@ -38,4 +38,3 @@ data Primary
     | SpecialSequence Text
     | Empty
     deriving Show
-
