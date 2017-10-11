@@ -2,7 +2,7 @@
 module EBNF
     ( module EBNF.AST
     , module EBNF.Parser
-    , Display(view)
+    , Display(view, astToText)
     ) where
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Text          (Text)
@@ -15,6 +15,9 @@ import           EBNF.Parser
 class Display a where
     view :: a -> IO ()
     view = Text.putStrLn . Text.pack . drawTree . tree
+
+    astToText :: a -> Text
+    astToText = Text.pack . drawTree . tree
 
     node :: String -> a -> Tree String
     node str x = Node str [ tree x ]

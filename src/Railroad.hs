@@ -1,27 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Railroad
-where
+    (ebnfToRailroad
+    ) where
 import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Monoid
 import           Data.Text          (Text)
 import qualified Data.Text          as Text
-import qualified Data.Text.IO       as Text
 import           EBNF
 
-main :: IO ()
-main = do
-    txt <- Text.readFile "EBNF.ebnf"
-    case parseEBNF txt of
-        (Left e)    -> putStrLn e
-        (Right ast) -> mapM_ saveDiagram $ astToDiagrams ast
-
-saveDiagram :: (Text, Text) -> IO ()
-saveDiagram (name, content) = do
-    Text.putStrLn name
-    Text.putStrLn content
-    Text.putStrLn ""
-    Text.writeFile ("./railroad/" ++ Text.unpack name) content
+ebnfToRailroad :: Text -> Either String (NonEmpty (Text, Text))
+ebnfToRailroad ebnf = case parseEBNF ebnf of
+    (Left e)    -> Left e
+    (Right ast) -> Right $ astToDiagrams ast
 
 astToDiagrams :: Syntax -> NonEmpty (Text, Text)
 astToDiagrams (Syntax rules) = fmap f rules
@@ -43,17 +34,11 @@ data Diagram
     = Diagram Railroad
     deriving Show
 
-newtype Diagrams = NonEmpty Diagram
-
 class ToRailroad a where
     railroad :: a -> Railroad
 
 class ToDiagram a where
     diagram :: a -> Text
-
-class ToDiagram a => ToDiagrams a where
-    diagrams :: NonEmpty a -> [Text]
-    diagrams xs = NonEmpty.toList $ fmap diagram xs
 
 instance ToRailroad Primary where
     railroad (OptionalSequence xs) = Optional $ railroad xs
