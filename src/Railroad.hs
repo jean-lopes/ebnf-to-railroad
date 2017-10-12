@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Railroad
-    (ebnfToRailroad
+    ( ebnfToRailroad
+    , astToRailroad
     ) where
 import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
@@ -12,10 +13,10 @@ import           EBNF
 ebnfToRailroad :: Text -> Either String (NonEmpty (Text, Text))
 ebnfToRailroad ebnf = case parseEBNF ebnf of
     (Left e)    -> Left e
-    (Right ast) -> Right $ astToDiagrams ast
+    (Right ast) -> Right $ astToRailroad ast
 
-astToDiagrams :: Syntax -> NonEmpty (Text, Text)
-astToDiagrams (Syntax rules) = fmap f rules
+astToRailroad :: Syntax -> NonEmpty (Text, Text)
+astToRailroad (Syntax rules) = fmap f rules
   where
     f (SyntaxRule name xs) = (name, diagram . Diagram $ railroad xs)
 
@@ -99,4 +100,4 @@ instance ToDiagram Railroad where
     diagram (ZeroOrMore child)  = "ZeroOrMore(" <> diagram child <> ", '', 'skip')"
 
 instance ToDiagram Diagram where
-    diagram (Diagram xs) = "Diagram(" <> diagram xs <> ")"
+    diagram (Diagram xs) = "Diagram(" <> diagram xs <> ").addTo()"

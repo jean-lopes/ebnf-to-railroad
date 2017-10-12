@@ -13,7 +13,7 @@ cabal-version:       >=1.10
 
 source-repository head
   type:     git
-  location: https://github.com/jean-lopes/ebnf-parser
+  location: https://github.com/jean-lopes/ebnf-to-railroad
 
 library
   hs-source-dirs:      src
@@ -31,14 +31,13 @@ library
 executable ebnf-to-railroad
   hs-source-dirs:      app
   main-is:             Main.hs
+  other-modules:       Html
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , ebnf-to-railroad
                      , text
                      , optparse-applicative
-                     , tagsoup
-                     , process
-                     , filepath
-                     , directory
+                     , easy-file
+                     , blaze-html
   default-language:    Haskell2010
   ghc-options:         -Wall
