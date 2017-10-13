@@ -1,25 +1,32 @@
+(* This is a modifed version of the informal definition in the ISO 14977 *)
 syntax = syntax-rule, {syntax-rule};
 
 syntax-rule = meta-identifier, '=', definitions-list, ';';
 
-definitions-list = single-definition, {'|', single-definition};
+definitions-list = single-definition , { '|', single-definition };
 
-single-definition = term, {',', term};
+single-definition = term, { ',', term };
 
-term = factor, ['-', exception];
-
-exception = factor;
+term = factor, [ '-', terminal ];
 
 factor = [integer, '*'], primary;
 
-primary = optional-sequence
-        | repeated-sequence
-        | special-sequence
-        | grouped-sequence
-        | meta-identifier
-        | terminal-string
-        | empty
-        ;
+primary = terminal | non-terminal;
+
+non-terminal 
+    = optional-sequence
+    | repeated-sequence
+    | grouped-sequence
+    | meta-identifier
+    ;
+
+terminal
+    = special-sequence
+    | terminal-string
+    | empty
+    ;
+
+empty = ;
 
 optional-sequence = '[', definitions-list, ']';
 
@@ -27,14 +34,11 @@ repeated-sequence = '{', definitions-list, '}';
 
 grouped-sequence = '(', definitions-list, ')';
 
-terminal-string
-    = "'", character - "'", {character - "'"}, "'"
-    | '"', character - '"', {character - '"'}, '"'
-    ;
+terminal-string = "'", character - "'", {character - "'"}, "'"
+                | '"', character - '"', {character - '"'}, '"'
+                ;
 
 meta-identifier = letter, {letter | decimal-digit};
-
-empty = ;
 
 integer = decimal-digit, {decimal-digit};
 

@@ -4,6 +4,7 @@ module EBNF
     , module EBNF.Parser
     , Display(view, astToText)
     ) where
+import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Text          (Text)
 import qualified Data.Text          as Text
@@ -22,8 +23,8 @@ class Display a where
     node :: String -> a -> Tree String
     node str x = Node str [ tree x ]
 
-    subNodes :: [a] -> Forest String
-    subNodes = fmap tree
+    subNodes :: NonEmpty a -> Forest String
+    subNodes = NonEmpty.toList . fmap tree
 
     tree :: a -> Tree String
 
@@ -35,14 +36,20 @@ instance Display Text where
       where
         label = Text.unpack xs
 
+instance Display Terminal where
+    tree Empty                = Node "terminal" [ Node "empty" [] ]
+    tree (SpecialSequence xs) = Node "terminal" [ node "special-sequence" xs ]
+    tree (TerminalString xs)  = Node "primary" [ node "terminal-string" xs ]
+
+instance Display NonTerminal where
+    tree (OptionalSequence xs) = Node "non-terminal" [ node "optional-sequence" xs ]
+    tree (RepeatedSequence xs) = Node "non-terminal" [ node "repeated-sequence" xs ]
+    tree (GroupedSequence xs)  = Node "non-terminal" [ node "grouped-sequence" xs ]
+    tree (MetaIdentifier xs)   = Node "non-terminal" [ node "meta-identifier" xs ]
+
 instance Display Primary where
-    tree (OptionalSequence xs) = Node "primary" [ node "optional-sequence" xs ]
-    tree (RepeatedSequence xs) = Node "primary" [ node "repeated-sequence" xs ]
-    tree (GroupedSequence xs)  = Node "primary" [ node "grouped-sequence" xs ]
-    tree (MetaIdentifier xs)   = Node "primary" [ node "meta-identifier" xs ]
-    tree (TerminalString xs)   = Node "primary" [ node "terminal-string" xs ]
-    tree (SpecialSequence xs)  = Node "primary" [ node "special-sequence" xs ]
-    tree Empty                 = Node "primary" [ Node "empty" [] ]
+    tree (PrimaryTerminal xs)    = node "primary" xs
+    tree (PrimaryNonTerminal xs) = node "primary" xs
 
 instance Display Factor where
     tree (Factor xs)           = Node "factor" [ node "single" xs ]
@@ -53,7 +60,7 @@ instance Display Term where
     tree (ExcludingTerm xs ys) = Node "term" [ tree xs, node "excluding" ys ]
 
 instance Display SingleDefinition where
-    tree (SingleDefinition xs) = Node "single-definition" $ subNodes $ NonEmpty.toList xs
+    tree (SingleDefinition xs) = Node "single-definition" $ subNodes xs
 
 instance Display DefinitionList where
     tree (DefinitionList xs) = Node "definition-list" $ subNodes xs
@@ -62,4 +69,4 @@ instance Display SyntaxRule where
     tree (SyntaxRule xs ys) = Node "syntax-rule" [ tree xs, tree ys ]
 
 instance Display Syntax where
-    tree (Syntax xs) = Node "syntax" $ subNodes $ NonEmpty.toList xs
+    tree (Syntax xs) = Node "syntax" $ subNodes xs

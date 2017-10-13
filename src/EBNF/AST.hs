@@ -12,7 +12,7 @@ data SyntaxRule
     deriving Show
 
 newtype DefinitionList
-    = DefinitionList [SingleDefinition]
+    = DefinitionList (NonEmpty SingleDefinition)
     deriving Show
 
 newtype SingleDefinition
@@ -21,7 +21,7 @@ newtype SingleDefinition
 
 data Term
     = Term Factor
-    | ExcludingTerm Factor Factor
+    | ExcludingTerm Factor Terminal
     deriving Show
 
 data Factor
@@ -30,11 +30,19 @@ data Factor
     deriving Show
 
 data Primary
+    = PrimaryTerminal Terminal
+    | PrimaryNonTerminal NonTerminal
+    deriving Show
+
+data NonTerminal
     = OptionalSequence DefinitionList
     | RepeatedSequence DefinitionList
     | GroupedSequence DefinitionList
     | MetaIdentifier Text
-    | TerminalString Text
+    deriving Show
+
+data Terminal
+    = TerminalString Text
     | SpecialSequence Text
     | Empty
     deriving Show

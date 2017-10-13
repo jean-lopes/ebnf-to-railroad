@@ -11,12 +11,16 @@ import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
 import           Text.Megaparsec.Text  (Parser)
 
+-- | Whitespace consumer
+-- |
+-- | Also consumers block comments starting with @(*@ and ending with @*)@
 whitespace :: Parser ()
 whitespace = Lexer.space (void spaceChar) line block
   where
     line = Lexer.skipLineComment "\0"
     block = Lexer.skipBlockComment "(*" "*)"
 
+-- | Consumes whitespace after a successful parse
 lexeme :: Parser a -> Parser a
 lexeme p = Lexer.lexeme whitespace p
 
@@ -58,34 +62,45 @@ specialSequence' = printChar `enclosedBy` '?'
 terminalString' :: Parser String
 terminalString' =   printChar `enclosedBy` '\'' <|> printChar `enclosedBy` '"'
 
-specialSequence :: Parser Primary
+specialSequence :: Parser Terminal
 specialSequence = SpecialSequence . Text.pack <$> lexeme specialSequence'
 
-terminalString :: Parser Primary
+terminalString :: Parser Terminal
 terminalString = TerminalString . Text.pack <$> lexeme terminalString'
 
-metaIdentifier :: Parser Primary
+empty :: Parser Terminal
+empty = pure Empty
+
+metaIdentifier :: Parser NonTerminal
 metaIdentifier = MetaIdentifier <$> identifier
 
-groupedSequence :: Parser Primary
+groupedSequence :: Parser NonTerminal
 groupedSequence = GroupedSequence <$> closed '(' definitionList ')'
 
-optionalSequence :: Parser Primary
+optionalSequence :: Parser NonTerminal
 optionalSequence = OptionalSequence <$> closed '[' definitionList ']'
 
-repeatedSequence :: Parser Primary
+repeatedSequence :: Parser NonTerminal
 repeatedSequence = RepeatedSequence <$> closed '{' definitionList '}'
 
-primary :: Parser Primary
-primary = choice
+terminal :: Parser Terminal
+terminal = choice
     [ specialSequence
     , terminalString
-    , metaIdentifier
-    , groupedSequence
-    , optionalSequence
-    , repeatedSequence
-    , pure Empty
+    , empty
     ]
+
+nonTerminal :: Parser NonTerminal
+nonTerminal = choice
+    [ repeatedSequence
+    , optionalSequence
+    , groupedSequence
+    , metaIdentifier
+    ]
+
+primary :: Parser Primary
+primary =   PrimaryNonTerminal <$> nonTerminal
+        <|> PrimaryTerminal <$> terminal
 
 repeatedFactor :: Parser Factor
 repeatedFactor = RepeatedFactor <$> integer <* asterisk <*> primary
@@ -96,7 +111,7 @@ factor :: Parser Factor
 factor = repeatedFactor <|> Factor <$> primary
 
 excludingTerm :: Parser Term
-excludingTerm = ExcludingTerm <$> factor <* minus <*> factor
+excludingTerm = ExcludingTerm <$> factor <* minus <*> terminal
   where
     minus = lexeme $ char '-'
 
@@ -107,9 +122,7 @@ singleDefinition :: Parser SingleDefinition
 singleDefinition = SingleDefinition <$> nonEmptyListSepBy term ','
 
 definitionList :: Parser DefinitionList
-definitionList = DefinitionList <$> singleDefinition `sepBy` pipe
-  where
-    pipe = lexeme $ char '|'
+definitionList = DefinitionList <$> nonEmptyListSepBy singleDefinition '|'
 
 syntaxRule :: Parser SyntaxRule
 syntaxRule = SyntaxRule <$> identifier <* equals <*> definitionList <* terminator
