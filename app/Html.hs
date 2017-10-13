@@ -2,15 +2,16 @@
 module Html
     ( generateHtml
     ) where
-import           Data.List.NonEmpty              (NonEmpty)
-import           Data.Text                       (Text)
-import           Text.Blaze.Html.Renderer.Pretty
-import           Text.Blaze.Html5                (toHtml, (!))
-import qualified Text.Blaze.Html5                as Html
+import           Data.List.NonEmpty            (NonEmpty)
+import           Data.Text                     (Text)
+import           Data.Text.Lazy                (toStrict)
+import           Text.Blaze.Html.Renderer.Text
+import           Text.Blaze.Html5              (toHtml, (!))
+import qualified Text.Blaze.Html5              as Html
 import           Text.Blaze.Html5.Attributes
 
-generateHtml :: String -> NonEmpty (Text, Text) -> String
-generateHtml n xs = renderHtml $ Html.docTypeHtml $ do
+generateHtml :: String -> NonEmpty (Text, Text) -> Text
+generateHtml n xs = toStrict $ renderHtml $ Html.docTypeHtml $ do
     Html.head $ do
         Html.title $ toHtml n
         Html.meta ! charset "UTF-8"

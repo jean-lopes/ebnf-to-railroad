@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main
 where
+import           Data.Default
 import           Data.Semigroup      ((<>))
 import qualified Data.Text           as Text
 import qualified Data.Text.IO        as Text
@@ -10,30 +11,43 @@ import           Options.Applicative
 import           Railroad
 import           System.EasyFile     ((<.>), (</>))
 import qualified System.EasyFile     as EasyFile
+import           System.Process
+import           Twitch
 
-data Args = Args
-    { inputArg   :: FilePath
-    , outputArg  :: FilePath
-    , showAstArg :: Bool
-    } deriving Show
+data Args
+    = Watch
+    | Normal { inputArg :: FilePath, outputArg :: FilePath, showAstArg :: Bool }
+    deriving Show
 
-argsParser :: Parser Args
-argsParser = Args
+watchParser :: Parser Args
+watchParser = flag' Watch
+    (  long "watch"
+    <> short 'w'
+    <> help "Watch changes to any EBNF in current the directory" )
+
+normalParser :: Parser Args
+normalParser = Normal
     <$> strOption
         (  long "input"
         <> short 'i'
         <> metavar "TARGET"
-        <> help "EBNF grammar file location." )
-    <*> strOption
+        <> help "EBNF grammar file location" )
+    <*> option auto
         (  long "output"
         <> short 'o'
-        <> help "Output directory."
-        )
+        <> help "Output directory"
+        <> showDefault
+        <> value "."
+        <> metavar "DIR" )
     <*> switch
         (  long "ast"
-        <> help "Also prints the Abstract Syntax Tree." )
+        <> help "Also prints the Abstract Syntax Tree" )
+
+argsParser :: Parser Args
+argsParser = watchParser <|> normalParser
 
 execute :: Args -> IO ()
+execute Watch = watch
 execute args = do
     input <- EasyFile.canonicalizePath $ inputArg args
 
@@ -50,7 +64,7 @@ execute args = do
     case parseEBNF ebnf of
         (Left e) -> putStrLn e
         (Right ast) -> do
-            let htmlFile = Text.pack $ generateHtml fileName $ astToRailroad ast
+            let htmlFile = generateHtml fileName $ astToRailroad ast
             Text.putStr "Writting Railroad diagrams: "
             Text.putStrLn $ Text.pack output
             Text.writeFile output htmlFile
@@ -65,13 +79,12 @@ printAST output ast = do
     Text.putStrLn $ Text.pack astFile
     Text.writeFile astFile $ astToText ast
 
+watch :: IO ()
+watch = defaultMainWithOptions def $ do
+    "*.ebnf" |> \path -> system $ "ebnf-to-railroad -i " <> path
+
 main :: IO ()
 main = execute =<< execParser opts
-  where
-    opts = info (argsParser <**> helper) (fullDesc <> progDesc (unlines description))
-    description =
-        [ "Generate Railroad diagrams from a EBNF grammar."
-        , "Requires 'npm' (https://www.npmjs.com/), and "
-        , "the package 'diagrams' (https://www.npmjs.com/package/diagrams)."
-        , "'npm' and 'diagrams' must be available in the O.S. PATH variable"
-        ]
+    where
+    opts = info (argsParser <**> helper) (fullDesc <> progDesc desc)
+    desc = "Generate Railroad diagrams from a EBNF grammar."
