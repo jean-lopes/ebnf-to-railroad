@@ -69,9 +69,9 @@ instance ToRailroad AST.Term where
     railroad (AST.ExcludingTerm xs ys) = excludeStr `appendTo` railroad xs
       where
         terminalText AST.Empty                  = ""
-        terminalText (AST.SpecialSequence text) = text
-        terminalText (AST.TerminalString text)  = text
-        excludeStr = " - " <> (quote . terminalText) ys
+        terminalText (AST.SpecialSequence text) = "?" <> text <> "?"
+        terminalText (AST.TerminalString text)  = quote text
+        excludeStr = " - " <> terminalText ys
 
 instance ToRailroad AST.SingleDefinition where
     railroad (AST.SingleDefinition xs) = Sequence
