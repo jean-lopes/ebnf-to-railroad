@@ -122,4 +122,4 @@ instance ToDiagram Railroad where
     diagram (ZeroOrMore child)  = "ZeroOrMore(" <> diagram child <> ", '', 'skip')"
 
 instance ToDiagram Diagram where
-    diagram (Diagram xs) = "Diagram(" <> diagram xs <> ").addTo()"
+    diagram (Diagram xs) = "Diagram(" <> diagram xs <> ").addTo();"
