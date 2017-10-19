@@ -1,3 +1,3 @@
-# ebnf-to-railroad
-
-- TODO: Proper readme ☺
+# EBNF to Railroad Diagram
+<br>
+# TODO: Proper readme ☺
