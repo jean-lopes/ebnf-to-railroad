@@ -17,10 +17,8 @@ source-repository head
 
 library
   hs-source-dirs:      src
-  exposed-modules:     EBNF
-                     , EBNF.AST
-                     , EBNF.Parser    
-                     , Railroad                 
+  exposed-modules:     Core
+                     , Core.EBNF        
   build-depends:       base >= 4.7 && < 5
                      , text 
                      , containers

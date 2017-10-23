@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main
 where
+import           Core
+import           Core.EBNF
 import           Data.Default
 import           Data.Semigroup      ((<>))
 import qualified Data.Text           as Text
 import qualified Data.Text.IO        as Text
-import           EBNF
 import           Html
 import           Options.Applicative
-import           Railroad
 import           System.EasyFile     ((<.>), (</>))
 import qualified System.EasyFile     as EasyFile
 import           System.Process
@@ -16,7 +16,7 @@ import           Twitch
 
 data Args
     = Watch
-    | Normal { inputArg :: FilePath, outputArg :: FilePath, showAstArg :: Bool }
+    | Normal { inputArg :: FilePath, outputArg :: FilePath }
     deriving Show
 
 watchParser :: Parser Args
@@ -39,9 +39,6 @@ normalParser = Normal
         <> showDefault
         <> value "."
         <> metavar "DIR" )
-    <*> switch
-        (  long "ast"
-        <> help "Also prints the Abstract Syntax Tree" )
 
 argsParser :: Parser Args
 argsParser = watchParser <|> normalParser
@@ -64,20 +61,10 @@ execute args = do
     case parseEBNF ebnf of
         (Left e) -> putStrLn e
         (Right ast) -> do
-            let htmlFile = generateHtml fileName $ astToRailroad ast
+            let htmlFile = generateHtml fileName $ grammarToJS ast
             Text.putStr "Writting Railroad diagrams: "
             Text.putStrLn $ Text.pack output
             Text.writeFile output htmlFile
-            if showAstArg args
-                then printAST outputDir ast
-                else return ()
-
-printAST :: FilePath -> Syntax -> IO ()
-printAST output ast = do
-    astFile <- EasyFile.canonicalizePath $ output </> "ast" <.> "txt"
-    Text.putStr "Writting Abstract Syntax Tree (AST) file: "
-    Text.putStrLn $ Text.pack astFile
-    Text.writeFile astFile $ astToText ast
 
 watch :: IO ()
 watch = defaultMainWithOptions def $ do

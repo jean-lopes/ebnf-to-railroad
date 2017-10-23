@@ -1,12 +1,12 @@
-module EBNF.Parser
-  ( parseEBNF
-  ) where
+module Core.EBNF
+    ( parseEBNF
+    ) where
 import           Control.Monad         (void)
+import           Core
 import           Data.List.NonEmpty    (NonEmpty)
 import qualified Data.List.NonEmpty    as NonEmpty
 import           Data.Text             (Text)
 import qualified Data.Text             as Text
-import           EBNF.AST
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
 import           Text.Megaparsec.Text  (Parser)
@@ -49,9 +49,9 @@ nonEmptyListSepBy p c = NonEmpty.fromList <$> sepBy1 p sep
     sep = lexeme $ char c
 
 identifier :: Parser Text
-identifier = lexeme $ Text.pack <$> name
+identifier = lexeme $ Text.pack <$> text
   where
-    name = (:) <$> letterChar <*> many (alphaNumChar <|> char '-')
+    text = (:) <$> letterChar <*> many (alphaNumChar <|> char '-')
 
 integer :: Parser Int
 integer = lexeme $ read <$> some digitChar
@@ -62,78 +62,77 @@ specialSequence' = printChar `enclosedBy` '?'
 terminalString' :: Parser String
 terminalString' =   printChar `enclosedBy` '\'' <|> printChar `enclosedBy` '"'
 
-specialSequence :: Parser Terminal
-specialSequence = SpecialSequence . Text.pack <$> lexeme specialSequence'
+specialSequence :: Parser (Core Text)
+specialSequence = Terminal . Text.pack <$> lexeme specialSequence'
 
-terminalString :: Parser Terminal
-terminalString = TerminalString . Text.pack <$> lexeme terminalString'
+terminalString :: Parser (Core Text)
+terminalString = Terminal . Text.pack <$> lexeme terminalString'
 
-empty :: Parser Terminal
+empty :: Parser (Core Text)
 empty = pure Empty
 
-metaIdentifier :: Parser NonTerminal
-metaIdentifier = MetaIdentifier <$> identifier
+metaIdentifier :: Parser (Core Text)
+metaIdentifier = NonTerminal <$> identifier
 
-groupedSequence :: Parser NonTerminal
-groupedSequence = GroupedSequence <$> closed '(' definitionList ')'
+groupedSequence :: Parser (Core Text)
+groupedSequence = Nested <$> closed '(' definitionList ')'
 
-optionalSequence :: Parser NonTerminal
-optionalSequence = OptionalSequence <$> closed '[' definitionList ']'
+optionalSequence :: Parser (Core Text)
+optionalSequence = Optional <$> closed '[' definitionList ']'
 
-repeatedSequence :: Parser NonTerminal
-repeatedSequence = RepeatedSequence <$> closed '{' definitionList '}'
+repeatedSequence :: Parser (Core Text)
+repeatedSequence = ZeroOrMore <$> closed '{' definitionList '}'
 
-terminal :: Parser Terminal
+terminal :: Parser (Core Text)
 terminal = choice
-    [ specialSequence
-    , terminalString
-    , empty
-    ]
+  [ specialSequence
+  , terminalString
+  , empty
+  ]
 
-nonTerminal :: Parser NonTerminal
+nonTerminal :: Parser (Core Text)
 nonTerminal = choice
-    [ repeatedSequence
-    , optionalSequence
-    , groupedSequence
-    , metaIdentifier
-    ]
+  [ repeatedSequence
+  , optionalSequence
+  , groupedSequence
+  , metaIdentifier
+  ]
 
-primary :: Parser Primary
-primary =   PrimaryNonTerminal <$> nonTerminal
-        <|> PrimaryTerminal <$> terminal
+primary :: Parser (Core Text)
+primary = nonTerminal <|> terminal
 
-repeatedFactor :: Parser Factor
-repeatedFactor = RepeatedFactor <$> integer <* asterisk <*> primary
+repeatedFactor :: Parser (Core Text)
+repeatedFactor = Repeat <$> integer <* asterisk <*> primary
   where
     asterisk = lexeme $ char '*'
 
-factor :: Parser Factor
-factor = repeatedFactor <|> Factor <$> primary
+factor :: Parser (Core Text)
+factor = repeatedFactor <|> primary
 
-excludingTerm :: Parser Term
-excludingTerm = ExcludingTerm <$> factor <* minus <*> terminal
+excludingTerm :: Parser (Core Text)
+excludingTerm = Excluding <$> (metaIdentifier <|> terminalString) <* minus <*> terminalString
   where
     minus = lexeme $ char '-'
 
-term :: Parser Term
-term = try excludingTerm <|> Term <$> factor
+term :: Parser (Core Text)
+term = try excludingTerm <|> factor
 
-singleDefinition :: Parser SingleDefinition
-singleDefinition = SingleDefinition <$> nonEmptyListSepBy term ','
+singleDefinition :: Parser (Core Text)
+singleDefinition = Sequence <$> nonEmptyListSepBy term ','
 
-definitionList :: Parser DefinitionList
-definitionList = DefinitionList <$> nonEmptyListSepBy singleDefinition '|'
+definitionList :: Parser (Core Text)
+definitionList = Choice <$> nonEmptyListSepBy singleDefinition '|'
 
-syntaxRule :: Parser SyntaxRule
-syntaxRule = SyntaxRule <$> identifier <* equals <*> definitionList <* terminator
+syntaxRule :: Parser (Rule Text)
+syntaxRule = Rule <$> identifier <* equals <*> definitionList <* terminator
   where
     equals = lexeme $ char '='
     terminator = lexeme $ char ';'
 
-syntax :: Parser Syntax
-syntax = Syntax <$> nonEmptyList syntaxRule
+syntax :: Parser (Grammar Text)
+syntax = Grammar <$> nonEmptyList syntaxRule
 
-parseEBNF :: Text -> Either String Syntax
+parseEBNF :: Text -> Either String (Grammar Text)
 parseEBNF str = case (parse (whitespace *> syntax <* eof) "<input>" str) of
-    (Left er) -> Left $ parseErrorPretty er
-    (Right x) -> Right x
+  (Left er) -> Left $ parseErrorPretty er
+  (Right x) -> Right x
